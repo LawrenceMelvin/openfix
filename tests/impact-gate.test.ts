@@ -89,7 +89,7 @@ describe('Stage 3b: End-to-End Flow, DB Transactions, Caller Blast Radius & Gril
         cwd: tmpDir,
         reproCmd: 'node -e "process.exit(0)"',
       })
-    ).toThrow(/Clarification ("Grill") Gate Violation/);
+    ).toThrow(/Clarification \("Grill"\) Gate Violation/);
 
     // Once user answers the grill questions, re-run impact with grillPending: false
     const resolvedRes = runImpact('BUG-902', {
