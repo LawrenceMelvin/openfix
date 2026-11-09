@@ -3,19 +3,11 @@ import path from 'node:path';
 import pc from 'picocolors';
 import type { BugMetadata, ReproRecord } from '../types.js';
 import {
-  findDefaultReproCommand,
-  runShellCommand,
-} from '../core/runner.js';
-import {
   renderFormattedDocumentation,
   syncKnownIssuesRunbook,
 } from '../core/doc-exporters.js';
-import {
-  getBugDir,
-  isHaltedState,
-  loadBugMeta,
-  saveBugMeta,
-} from '../core/state.js';
+import { getBugDir, isHaltedState, loadBugMeta, saveBugMeta } from '../core/state.js';
+import { runShellCommand } from '../core/runner.js';
 import {
   renderReproStepsMarkdown,
   renderTasksMarkdown,
@@ -24,6 +16,34 @@ import {
 export interface ReproOptions {
   cwd?: string;
   cmd?: string;
+}
+
+export function findDefaultReproCommand(bugDir: string): string {
+  const reproDir = path.join(bugDir, '2-repro');
+  if (!fs.existsSync(reproDir)) {
+    throw new Error(`Reproduction directory not found at ${reproDir}`);
+  }
+
+  const files = fs
+    .readdirSync(reproDir)
+    .filter((f) => f !== 'fixture.json' && !f.endsWith('.md'));
+
+  const firstFile = files[0];
+  if (!firstFile) {
+    throw new Error(`No reproduction script found in ${reproDir}`);
+  }
+
+  const fullPath = path.join(reproDir, firstFile);
+  if (firstFile.endsWith('.mjs') || firstFile.endsWith('.js')) {
+    return `node "${fullPath}"`;
+  }
+  if (firstFile.endsWith('.py')) {
+    return `python "${fullPath}"`;
+  }
+  if (firstFile.endsWith('.sh')) {
+    return `sh "${fullPath}"`;
+  }
+  return `npx tsx "${fullPath}"`;
 }
 
 export function runRepro(

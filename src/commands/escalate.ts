@@ -22,26 +22,35 @@ export function runEscalate(
   const rcaPath = path.join(bugDir, '3-rca.md');
   const rcaContent = fs.existsSync(rcaPath)
     ? fs.readFileSync(rcaPath, 'utf-8')
-    : 'See OpenFix RCA file';
-
-  const openspecProposal = renderOpenSpecEscalation(meta, rcaContent);
+    : 'See OpenFix workspace.';
 
   const openspecChangeDir = path.resolve(
     cwd,
     config.openspecDir,
-    'changes',
     `fix-${meta.id.toLowerCase()}`
   );
   fs.mkdirSync(openspecChangeDir, { recursive: true });
 
+  const docs = renderOpenSpecEscalation(meta, rcaContent);
   fs.writeFileSync(
     path.join(openspecChangeDir, 'proposal.md'),
-    openspecProposal,
+    docs.proposal,
+    'utf-8'
+  );
+  fs.writeFileSync(
+    path.join(openspecChangeDir, 'design.md'),
+    docs.design,
+    'utf-8'
+  );
+  fs.writeFileSync(
+    path.join(openspecChangeDir, 'tasks.md'),
+    docs.tasks,
     'utf-8'
   );
 
-  meta.status = 'ESCALATED_TO_OPENSPEC';
-  meta.openspecEscalation = path.relative(cwd, openspecChangeDir);
+  meta.fixSize = 'big-architectural';
+  meta.status = 'ESCALATED_OPENSPEC';
+  meta.escalatedTo = path.relative(cwd, openspecChangeDir);
   saveBugMeta(bugDir, meta);
 
   return { bugDir, meta, openspecChangeDir };
@@ -50,17 +59,13 @@ export function runEscalate(
 export function printEscalateResult(
   result: ReturnType<typeof runEscalate>
 ): void {
-  const { meta, openspecChangeDir } = result;
   console.log(
-    pc.magenta(
-      `✔ Escalated ${pc.bold(meta.id)} to OpenSpec architectural proposal!`
+    pc.green(
+      `✔ Escalated ${pc.bold(result.meta.id)} to OpenSpec architectural workflow!`
     )
   );
-  console.log(`  OpenSpec Dir: ${pc.cyan(openspecChangeDir)}`);
+  console.log(`  OpenSpec Directory: ${pc.cyan(result.openspecChangeDir)}`);
   console.log(
-    `  Proposal:     ${pc.cyan(path.join(openspecChangeDir, 'proposal.md'))}`
-  );
-  console.log(
-    '\nOpenFix handoff complete. Use "openspec" CLI or OpenSpec workflows to design the architectural change.'
+    `  Created:            ${pc.yellow('proposal.md, design.md, tasks.md')}`
   );
 }
